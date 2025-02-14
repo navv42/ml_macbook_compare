@@ -23,6 +23,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--cpu", action="store_true")
     parser.add_argument("--checkpoint", type=str, help="path to load checkpoint")
+    parser.add_argument("--device", type=str, help="macbook chip in use")
     return parser.parse_args()
 
 def main():
@@ -45,23 +46,23 @@ def main():
     print(f"Using device: {mx.default_device()}")
     
     # Get data
-    train_data, test_data = get_cifar100(args.batch_size)
+    train_data, test_data = get_cifar10(args.batch_size)
     
     # Train and collect metrics using the new fit() method
     metrics = trainer.fit(train_data, test_data, epochs=args.epochs)
     
     # Save checkpoint and metrics after training
     trainer.save_checkpoint(f"checkpoint_epoch_{args.epochs - 1}.pkl")
-    metrics_path = Path("metrics") / f"metrics_{args.arch}_{int(time.time())}.json"
-    metrics_path.parent.mkdir(exist_ok=True)
+    metrics_path = Path("metrics") / f"{args.device}" / f"{args.arch}_{args.batch_size}_{args.lr}.json"
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
     with open(metrics_path, 'w') as f:
         json.dump({
             'config': vars(args),
             'train_metrics': metrics['train_metrics'],
             'timestamps': metrics['timestamps']
         }, f)
-    print(metrics)
-    generate_performance_plots(metrics, save_dir="figures")
+    # print(metrics)
+    # generate_performance_plots(metrics, save_dir="figures")
 
 if __name__ == "__main__":
     main()

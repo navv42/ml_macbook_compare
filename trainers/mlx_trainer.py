@@ -46,12 +46,13 @@ class MLXTrainer:
             (loss, acc), grads = train_step_fn(self.model, inp, tgt)
             self.optimizer.update(self.model, grads)
             return loss, acc
-
+        mx.metal.reset_peak_memory()
+        peak_cache = 0
         for batch_counter, batch in enumerate(train_iter):
             x = mx.array(batch["image"])
             y = mx.array(batch["label"])
-            gpu_memory = mx.metal.get_active_memory() / (1024 ** 2)
-            gpu_memories.append(gpu_memory)
+            cache_memory = mx.metal.get_cache_memory() / (1024 ** 3)
+            peak_cache = max(peak_cache, cache_memory)
             tic = time.perf_counter()
             loss, acc = step(x, y)
             mx.eval(state)
@@ -66,7 +67,7 @@ class MLXTrainer:
             batch_time = toc - tic
             batch_times.append(batch_time)
             
-            if batch_counter % 10 == 0:
+            if batch_counter % 20 == 0:
                 print(
                     " | ".join(
                         (
@@ -74,10 +75,12 @@ class MLXTrainer:
                             f"Train loss {loss_val:.3f}",
                             f"Train acc {acc_val:.3f}",
                             f"Throughput: {throughput:.2f} images/sec",
-                            f"GPU memory: {gpu_memory:.2f} MB",
+                            f"Cache memory peak: {peak_cache:.2f} GB",
+                            f"GPU memory peak: {mx.metal.get_peak_memory() / (1024 ** 3):.2f} GB",
                         )
                     )
                 )
+        peak_mem = mx.metal.get_peak_memory() / (1024 ** 3)
 
         if epoch < 5:
             self.optimizer.learning_rate = self.scheduler(epoch) * (epoch / 5)
@@ -86,8 +89,10 @@ class MLXTrainer:
             'loss': mx.mean(mx.array(losses)).item(),
             'acc': mx.mean(mx.array(accs)).item(),
             'throughput': mx.mean(mx.array(throughputs)).item(),
-            'gpu_memories': gpu_memories,
+            'gpu_mem_peak': peak_mem,
+            'cache_mem_peak': peak_cache,
             'batch_times': batch_times,
+            'batch_time_avg': mx.mean(mx.array(batch_times)).item(),
             'epoch_time': sum(batch_times),
         }
 
