@@ -5,7 +5,7 @@ from pathlib import Path
 import mlx.core as mx
 from models.resnet import resnet20, resnet32, resnet44, resnet56, resnet110, resnet1202
 from trainers.mlx_trainer import MLXTrainer
-from dataset import get_cifar10
+from dataset import get_cifar10, get_cifar100
 from utils.visualization import generate_performance_plots
 
 def parse_args():
@@ -13,13 +13,13 @@ def parse_args():
     parser.add_argument(
         "--arch",
         type=str,
-        default="resnet20",
+        default="resnet44",
         choices=[f"resnet{d}" for d in [20, 32, 44, 56, 110, 1202]],
         help="model architecture",
     )
-    parser.add_argument("--batch_size", type=int, default=512)
+    parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument("--lr", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--cpu", action="store_true")
     parser.add_argument("--checkpoint", type=str, help="path to load checkpoint")
@@ -45,7 +45,7 @@ def main():
     print(f"Using device: {mx.default_device()}")
     
     # Get data
-    train_data, test_data = get_cifar10(args.batch_size)
+    train_data, test_data = get_cifar100(args.batch_size)
     
     # Train and collect metrics using the new fit() method
     metrics = trainer.fit(train_data, test_data, epochs=args.epochs)
@@ -60,7 +60,7 @@ def main():
             'train_metrics': metrics['train_metrics'],
             'timestamps': metrics['timestamps']
         }, f)
-    
+    print(metrics)
     generate_performance_plots(metrics, save_dir="figures")
 
 if __name__ == "__main__":

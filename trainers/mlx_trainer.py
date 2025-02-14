@@ -4,11 +4,13 @@ import mlx.core as mx
 import mlx.nn as nn
 import mlx.optimizers as optim
 import pickle
+from utils.visualization import show_dataset_samples, plot_predictions
 
 class MLXTrainer:
-    def __init__(self, model, learning_rate=0.01):
+    def __init__(self, model, learning_rate=0.01, weight_decay=5e-4, momentum=0.9):
         self.model = model
-        self.optimizer = optim.AdamW(learning_rate=learning_rate, weight_decay=1e-4)
+        self.optimizer = optim.SGD(learning_rate=learning_rate, momentum=momentum, weight_decay=weight_decay)
+        self.scheduler = optim.cosine_decay(learning_rate, 50 * 39)
         
     def load_checkpoint(self, checkpoint_path):
         with open(checkpoint_path, "rb") as f:
@@ -77,6 +79,9 @@ class MLXTrainer:
                     )
                 )
 
+        if epoch < 5:
+            self.optimizer.learning_rate = self.scheduler(epoch) * (epoch / 5)
+
         return {
             'loss': mx.mean(mx.array(losses)).item(),
             'acc': mx.mean(mx.array(accs)).item(),
@@ -89,7 +94,8 @@ class MLXTrainer:
     def evaluate(self, test_iter):
         def eval_fn(model, inp, tgt):
             return mx.mean(mx.argmax(model(inp), axis=1) == tgt)
-            
+        # show_dataset_samples(test_iter, num_images=12)
+        # plot_predictions(self.model, test_iter)
         accs = []
         for batch in test_iter:
             x = mx.array(batch["image"])
