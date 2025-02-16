@@ -21,7 +21,7 @@ for bs, model, lr, dataset in tqdm(experiment_configs, desc="Experiments"):
     arch = models[model]
     filename = f"metrics/{DEVICE}/{arch}_{bs}_{lr}.json"
     if os.path.exists(filename):
-        print(f"Skipping {filename} (already exists)")
+        tqdm.write(f"Skipping {filename} (already exists)")
         continue
     # Build the command line arguments
     # Note: Adjust argument names if needed; here, dataset is not used in main.py, so you might extend main.py to accept it.

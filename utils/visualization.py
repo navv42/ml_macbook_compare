@@ -46,7 +46,7 @@ def plot_predictions(model, test_batch, num_images=10):
         axes[i].imshow(img)
         axes[i].axis("off")
         axes[i].set_title(
-            f"Pred: {CIFAR100_LABELS[pred]}\nTrue: {CIFAR100_LABELS[true]}", 
+            f"Pred: {CIFAR10_LABELS[pred]}\nTrue: {CIFAR10_LABELS[true]}", 
             fontsize=8
         )
     
@@ -78,27 +78,27 @@ def show_dataset_samples(data_iter, num_images=12):
 
 
 
-def generate_performance_plots(metrics, save_dir="figures"):
+def generate_performance_plots(metrics, lr, save_dir="figures"):
     os.makedirs(save_dir, exist_ok=True)
     train_metrics = metrics['train_metrics']
     timestamps = metrics['timestamps']
     
     # Training Loss
     plt.figure(figsize=(10, 6))
-    plt.plot([m['epoch'] for m in train_metrics], [m['train_loss'] for m in train_metrics])
+    plt.plot([m['epoch'] for m in train_metrics], [m['loss'] for m in train_metrics])
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.title('Training Loss vs Epochs')
-    plt.savefig(os.path.join(save_dir, 'loss_vs_epoch.png'))
+    plt.savefig(os.path.join(save_dir, f'loss_vs_epoch_{lr}.png'))
     plt.close()
 
     # Training Loss vs Wall Time
     plt.figure(figsize=(10, 6))
-    plt.plot(timestamps, [m['train_loss'] for m in train_metrics])
+    plt.plot(timestamps, [m['loss'] for m in train_metrics])
     plt.xlabel('Wall Time (s)')
     plt.ylabel('Loss')
     plt.title('Training Loss vs Wall Time')
-    plt.savefig(os.path.join(save_dir, 'loss_vs_walltime.png'))
+    plt.savefig(os.path.join(save_dir, f'loss_vs_walltime_{lr}.png'))
     plt.close()
 
     # Throughput
@@ -107,14 +107,13 @@ def generate_performance_plots(metrics, save_dir="figures"):
     plt.xlabel('Epoch')
     plt.ylabel('Images/Second')
     plt.title('Training Throughput')
-    plt.savefig(os.path.join(save_dir, 'throughput.png'))
+    plt.savefig(os.path.join(save_dir, f'throughput_{lr}.png'))
     plt.close()
 
     # GPU Memory Usage
-    if any(m['gpu_memory_max'] > 0 for m in train_metrics):
+    if any(m['gpu_mem_peak'] > 0 for m in train_metrics):
         plt.figure(figsize=(10, 6))
-        plt.plot([m['epoch'] for m in train_metrics], [m['gpu_memory_avg'] for m in train_metrics], label='Average')
-        plt.plot([m['epoch'] for m in train_metrics], [m['gpu_memory_max'] for m in train_metrics], label='Max')
+        plt.plot([m['epoch'] for m in train_metrics], [m['gpu_mem_peak'] for m in train_metrics], label='Max')
         plt.xlabel('Epoch')
         plt.ylabel('GPU Memory (MB)')
         plt.title('GPU Memory Usage')
@@ -134,11 +133,11 @@ def generate_performance_plots(metrics, save_dir="figures"):
 
     # Accuracy Progress
     plt.figure(figsize=(10, 6))
-    plt.plot([m['epoch'] for m in train_metrics], [m['train_acc'] for m in train_metrics], label='Train')
+    plt.plot([m['epoch'] for m in train_metrics], [m['acc'] for m in train_metrics], label='Train')
     plt.plot([m['epoch'] for m in train_metrics], [m['test_acc'] for m in train_metrics], label='Test')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.title('Training and Test Accuracy')
     plt.legend()
-    plt.savefig(os.path.join(save_dir, 'accuracy.png'))
+    plt.savefig(os.path.join(save_dir, f'accuracy_{lr}.png'))
     plt.close()
